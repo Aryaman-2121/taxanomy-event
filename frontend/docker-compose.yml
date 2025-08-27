@@ -1,0 +1,102 @@
+# Copyright (c) 2025 Eventful India Marketing Services, India
+# All rights reserved.
+# 
+# Service: taxonomy
+# Port: 3201
+# Docker Compose - Development Environment
+# Template: Eventzr Code Repository Template v1.0
+
+version: '3.8'
+
+services:
+  taxonomy-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    container_name: taxonomy-frontend-dev
+    ports:
+      - "3201:3201"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_BASE_URL=http://localhost:3000
+      - NEXT_PUBLIC_APP_ENV=development
+      - NEXT_PUBLIC_ENABLE_DEV_TOOLS=true
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - eventzr-network
+    depends_on:
+      - taxonomy-backend
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.taxonomy-frontend.rule=Host(`taxonomy.localhost`)"
+      - "traefik.http.routers.taxonomy-frontend.entrypoints=web"
+      - "traefik.http.services.taxonomy-frontend.loadbalancer.server.port=3201"
+
+  taxonomy-backend:
+    image: taxonomy-backend:latest
+    container_name: taxonomy-backend-dev
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/taxonomy_dev
+      - REDIS_URL=redis://redis:6379
+    networks:
+      - eventzr-network
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: taxonomy-postgres-dev
+    environment:
+      - POSTGRES_DB=taxonomy_dev
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - eventzr-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: taxonomy-redis-dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - eventzr-network
+
+  storybook:
+    build:
+      context: .
+      dockerfile: Dockerfile.storybook
+    container_name: taxonomy-storybook-dev
+    ports:
+      - "6006:6006"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    networks:
+      - eventzr-network
+    profiles:
+      - storybook
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  eventzr-network:
+    external: true
+

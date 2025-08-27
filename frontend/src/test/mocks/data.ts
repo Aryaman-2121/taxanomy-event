@@ -1,0 +1,181 @@
+/**
+ * Copyright (c) 2025 Eventful India Marketing Services, India
+ * All rights reserved.
+ * 
+ * Service: taxonomy
+ * Port: 3201
+ * Mock Data - Test Fixtures
+ * Template: Eventzr Code Repository Template v1.0
+ */
+
+import { Namespace, Category, Classification } from '@/lib/api/taxonomy-client';
+
+export const mockNamespaces: Namespace[] = [
+  {
+    id: 'events-namespace',
+    name: 'events',
+    display_name: 'Events',
+    description: 'Event categorization and classification',
+    status: 'active',
+    created_at: '2025-01-01T00:00:00Z',
+    updated_at: '2025-01-01T00:00:00Z',
+    tenant_id: 'test-tenant',
+    quota_categories: 1000,
+    quota_classifications: 10000,
+  },
+  {
+    id: 'venues-namespace',
+    name: 'venues',
+    display_name: 'Venues',
+    description: 'Venue types and characteristics',
+    status: 'active',
+    created_at: '2025-01-01T00:00:00Z',
+    updated_at: '2025-01-01T00:00:00Z',
+    tenant_id: 'test-tenant',
+    quota_categories: 500,
+    quota_classifications: 5000,
+  },
+  {
+    id: 'content-namespace',
+    name: 'content',
+    display_name: 'Content',
+    description: 'Content types and topics',
+    status: 'deprecated',
+    created_at: '2025-01-01T00:00:00Z',
+    updated_at: '2025-01-01T00:00:00Z',
+    tenant_id: 'test-tenant',
+    quota_categories: 200,
+    quota_classifications: 2000,
+  },
+];
+
+export const mockCategories: Category[] = [
+  {
+    id: 'music-events',
+    namespace_id: 'events-namespace',
+    entity_type: 'events',
+    name: 'music_events',
+    display_name: 'Music Events',
+    description: 'Live music performances and concerts',
+    status: 'active',
+    materialized_path: '/music_events',
+    depth: 0,
+    sort_order: 1,
+    is_leaf: false,
+    created_at: '2025-01-01T00:00:00Z',
+    updated_at: '2025-01-01T00:00:00Z',
+    tenant_id: 'test-tenant',
+    children: [],
+  },
+  {
+    id: 'rock-concerts',
+    namespace_id: 'events-namespace',
+    entity_type: 'events',
+    name: 'rock_concerts',
+    display_name: 'Rock Concerts',
+    description: 'Rock and metal music concerts',
+    parent_id: 'music-events',
+    status: 'active',
+    materialized_path: '/music_events/rock_concerts',
+    depth: 1,
+    sort_order: 1,
+    is_leaf: true,
+    created_at: '2025-01-01T00:00:00Z',
+    updated_at: '2025-01-01T00:00:00Z',
+    tenant_id: 'test-tenant',
+  },
+  {
+    id: 'jazz-concerts',
+    namespace_id: 'events-namespace',
+    entity_type: 'events',
+    name: 'jazz_concerts',
+    display_name: 'Jazz Concerts',
+    description: 'Jazz and blues music performances',
+    parent_id: 'music-events',
+    status: 'active',
+    materialized_path: '/music_events/jazz_concerts',
+    depth: 1,
+    sort_order: 2,
+    is_leaf: true,
+    created_at: '2025-01-01T00:00:00Z',
+    updated_at: '2025-01-01T00:00:00Z',
+    tenant_id: 'test-tenant',
+  },
+  {
+    id: 'sports-events',
+    namespace_id: 'events-namespace',
+    entity_type: 'events',
+    name: 'sports_events',
+    display_name: 'Sports Events',
+    description: 'Athletic competitions and sporting events',
+    status: 'active',
+    materialized_path: '/sports_events',
+    depth: 0,
+    sort_order: 2,
+    is_leaf: false,
+    created_at: '2025-01-01T00:00:00Z',
+    updated_at: '2025-01-01T00:00:00Z',
+    tenant_id: 'test-tenant',
+    children: [],
+  },
+  {
+    id: 'outdoor-venues',
+    namespace_id: 'venues-namespace',
+    entity_type: 'venues',
+    name: 'outdoor_venues',
+    display_name: 'Outdoor Venues',
+    description: 'Open-air and outdoor event spaces',
+    status: 'active',
+    materialized_path: '/outdoor_venues',
+    depth: 0,
+    sort_order: 1,
+    is_leaf: false,
+    created_at: '2025-01-01T00:00:00Z',
+    updated_at: '2025-01-01T00:00:00Z',
+    tenant_id: 'test-tenant',
+    children: [],
+  },
+];
+
+export const mockClassifications: Classification[] = [
+  {
+    id: 'classification-1',
+    entity_type: 'events',
+    entity_id: 'event-123',
+    category_id: 'rock-concerts',
+    status: 'confirmed',
+    confidence_score: 0.95,
+    assigned_by: 'ai',
+    assigned_at: '2025-01-01T00:00:00Z',
+    confirmed_at: '2025-01-01T01:00:00Z',
+    tenant_id: 'test-tenant',
+    category: mockCategories[1], // rock-concerts
+  },
+  {
+    id: 'classification-2',
+    entity_type: 'events',
+    entity_id: 'event-456',
+    category_id: 'jazz-concerts',
+    status: 'pending',
+    confidence_score: 0.78,
+    assigned_by: 'ai',
+    assigned_at: '2025-01-01T02:00:00Z',
+    expires_at: '2025-01-08T02:00:00Z',
+    tenant_id: 'test-tenant',
+    category: mockCategories[2], // jazz-concerts
+  },
+  {
+    id: 'classification-3',
+    entity_type: 'venues',
+    entity_id: 'venue-789',
+    category_id: 'outdoor-venues',
+    status: 'confirmed',
+    confidence_score: 1.0,
+    assigned_by: 'user',
+    assigned_at: '2025-01-01T03:00:00Z',
+    confirmed_at: '2025-01-01T03:00:00Z',
+    tenant_id: 'test-tenant',
+    category: mockCategories[4], // outdoor-venues
+  },
+];
+

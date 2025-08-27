@@ -1,0 +1,199 @@
+# Copyright (c) 2025 Eventful India Marketing Services, India
+# All rights reserved.
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: taxonomy-frontend
+  namespace: eventzr
+  labels:
+    app: taxonomy-frontend
+    service: taxonomy
+    tier: frontend
+    version: v1
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: taxonomy-frontend
+  template:
+    metadata:
+      labels:
+        app: taxonomy-frontend
+        service: taxonomy
+        tier: frontend
+        version: v1
+    spec:
+      containers:
+      - name: taxonomy-frontend
+        image: ghcr.io/eventzr/taxonomy-frontend:latest
+        ports:
+        - containerPort: 3201
+          protocol: TCP
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "3201"
+        - name: HOSTNAME
+          value: "0.0.0.0"
+        - name: NEXT_PUBLIC_API_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: taxonomy-frontend-config
+              key: api-base-url
+        - name: NEXT_PUBLIC_APP_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: taxonomy-frontend-config
+              key: app-env
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3201
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3201
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1001
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: next-cache
+          mountPath: /app/.next/cache
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: next-cache
+        emptyDir: {}
+      securityContext:
+        fsGroup: 1001
+      imagePullSecrets:
+      - name: github-registry-secret
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: taxonomy-frontend-service
+  namespace: eventzr
+  labels:
+    app: taxonomy-frontend
+spec:
+  selector:
+    app: taxonomy-frontend
+  ports:
+  - name: http
+    port: 80
+    targetPort: 3201
+    protocol: TCP
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: taxonomy-frontend-config
+  namespace: eventzr
+data:
+  api-base-url: "https://api.eventzr.com"
+  app-env: "production"
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: taxonomy-frontend-ingress
+  namespace: eventzr
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "1m"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+spec:
+  tls:
+  - hosts:
+    - taxonomy.eventzr.com
+    secretName: taxonomy-frontend-tls
+  rules:
+  - host: taxonomy.eventzr.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: taxonomy-frontend-service
+            port:
+              number: 80
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: taxonomy-frontend-hpa
+  namespace: eventzr
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: taxonomy-frontend
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60

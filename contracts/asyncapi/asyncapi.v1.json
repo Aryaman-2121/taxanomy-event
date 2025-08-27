@@ -1,0 +1,502 @@
+{
+  "asyncapi": "3.0.0",
+  "info": {
+    "title": "Taxonomy Service Events",
+    "version": "1.0.0",
+    "description": "Event specifications for the Taxonomy service (port 3201)",
+    "contact": {
+      "name": "Eventzr Platform Team",
+      "url": "https://docs.eventzr.com/services/taxonomy"
+    }
+  },
+  "defaultContentType": "application/json",
+  "channels": {
+    "taxonomy-updates": {
+      "address": "ez.data.taxonomy.updated",
+      "messages": {
+        "taxonomyUpdated": {
+          "$ref": "#/components/messages/TaxonomyUpdated"
+        }
+      },
+      "description": "Channel for taxonomy lifecycle events"
+    },
+    "category-updates": {
+      "address": "ez.data.taxonomy.category.updated",
+      "messages": {
+        "categoryUpdated": {
+          "$ref": "#/components/messages/CategoryUpdated"
+        }
+      },
+      "description": "Channel for category lifecycle events"
+    },
+    "classification-updates": {
+      "address": "ez.data.taxonomy.classification.updated",
+      "messages": {
+        "classificationUpdated": {
+          "$ref": "#/components/messages/ClassificationUpdated"
+        }
+      },
+      "description": "Channel for entity classification events"
+    }
+  },
+  "operations": {
+    "publishTaxonomyUpdated": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/taxonomy-updates"
+      },
+      "title": "Publish taxonomy updated event",
+      "description": "Published when a taxonomy is created, updated, or status changed",
+      "messages": [
+        {
+          "$ref": "#/channels/taxonomy-updates/messages/taxonomyUpdated"
+        }
+      ]
+    },
+    "publishCategoryUpdated": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/category-updates"
+      },
+      "title": "Publish category updated event",
+      "description": "Published when a category is created, updated, or hierarchy changed",
+      "messages": [
+        {
+          "$ref": "#/channels/category-updates/messages/categoryUpdated"
+        }
+      ]
+    },
+    "publishClassificationUpdated": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/classification-updates"
+      },
+      "title": "Publish classification updated event",
+      "description": "Published when an entity classification changes",
+      "messages": [
+        {
+          "$ref": "#/channels/classification-updates/messages/classificationUpdated"
+        }
+      ]
+    }
+  },
+  "components": {
+    "messages": {
+      "TaxonomyUpdated": {
+        "name": "TaxonomyUpdated",
+        "title": "Taxonomy Updated Event",
+        "summary": "Published when a taxonomy is created, updated, or status changed",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "#/components/schemas/TaxonomyUpdatedPayload"
+        }
+      },
+      "CategoryUpdated": {
+        "name": "CategoryUpdated",
+        "title": "Category Updated Event",
+        "summary": "Published when a category is created, updated, or hierarchy changed",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "#/components/schemas/CategoryUpdatedPayload"
+        }
+      },
+      "ClassificationUpdated": {
+        "name": "ClassificationUpdated",
+        "title": "Classification Updated Event",
+        "summary": "Published when an entity classification changes",
+        "contentType": "application/json",
+        "payload": {
+          "$ref": "#/components/schemas/ClassificationUpdatedPayload"
+        }
+      }
+    },
+    "schemas": {
+      "TaxonomyUpdatedPayload": {
+        "type": "object",
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique event identifier"
+          },
+          "event_type": {
+            "type": "string",
+            "enum": ["taxonomy.created", "taxonomy.updated", "taxonomy.status_changed", "taxonomy.deleted"],
+            "description": "Type of taxonomy event"
+          },
+          "event_version": {
+            "type": "string",
+            "const": "v1.0.0",
+            "description": "Event schema version"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Event timestamp in ISO 8601 format"
+          },
+          "source": {
+            "type": "string",
+            "const": "taxonomy:3201",
+            "description": "Event source service"
+          },
+          "tenant_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Tenant identifier"
+          },
+          "taxonomy": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Taxonomy identifier"
+              },
+              "namespace": {
+                "type": "string",
+                "description": "Taxonomy namespace"
+              },
+              "name": {
+                "type": "string",
+                "description": "Taxonomy name"
+              },
+              "slug": {
+                "type": "string",
+                "description": "Taxonomy slug"
+              },
+              "version": {
+                "type": "integer",
+                "description": "Taxonomy version"
+              },
+              "status": {
+                "type": "string",
+                "enum": ["draft", "active", "deprecated", "archived"],
+                "description": "Taxonomy status"
+              },
+              "is_system": {
+                "type": "boolean",
+                "description": "Whether this is a system taxonomy"
+              },
+              "is_hierarchical": {
+                "type": "boolean",
+                "description": "Whether taxonomy supports hierarchy"
+              }
+            },
+            "required": ["id", "namespace", "name", "slug", "version", "status", "is_system", "is_hierarchical"]
+          },
+          "changes": {
+            "type": "object",
+            "description": "Details of what changed (for update events)",
+            "properties": {
+              "previous_status": {
+                "type": "string",
+                "description": "Previous status for status change events"
+              },
+              "updated_fields": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "List of updated field names"
+              }
+            }
+          },
+          "metadata": {
+            "type": "object",
+            "description": "Additional event metadata",
+            "properties": {
+              "correlation_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Request correlation ID"
+              },
+              "user_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "User who triggered the change"
+              },
+              "operation": {
+                "type": "string",
+                "description": "Operation that caused the event"
+              }
+            }
+          }
+        },
+        "required": ["event_id", "event_type", "event_version", "timestamp", "source", "tenant_id", "taxonomy"]
+      },
+      "CategoryUpdatedPayload": {
+        "type": "object",
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique event identifier"
+          },
+          "event_type": {
+            "type": "string",
+            "enum": ["category.created", "category.updated", "category.moved", "category.deleted"],
+            "description": "Type of category event"
+          },
+          "event_version": {
+            "type": "string",
+            "const": "v1.0.0",
+            "description": "Event schema version"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Event timestamp in ISO 8601 format"
+          },
+          "source": {
+            "type": "string",
+            "const": "taxonomy:3201",
+            "description": "Event source service"
+          },
+          "tenant_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Tenant identifier"
+          },
+          "taxonomy_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Parent taxonomy identifier"
+          },
+          "category": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Category identifier"
+              },
+              "parent_id": {
+                "type": "string",
+                "format": "uuid",
+                "nullable": true,
+                "description": "Parent category identifier"
+              },
+              "name": {
+                "type": "string",
+                "description": "Category name"
+              },
+              "slug": {
+                "type": "string",
+                "description": "Category slug"
+              },
+              "level": {
+                "type": "integer",
+                "description": "Hierarchy level"
+              },
+              "path": {
+                "type": "string",
+                "description": "Materialized path"
+              },
+              "is_leaf": {
+                "type": "boolean",
+                "description": "Whether category is a leaf node"
+              },
+              "is_active": {
+                "type": "boolean",
+                "description": "Whether category is active"
+              },
+              "ai_generated": {
+                "type": "boolean",
+                "description": "Whether AI-generated"
+              }
+            },
+            "required": ["id", "name", "slug", "level", "path", "is_leaf", "is_active", "ai_generated"]
+          },
+          "changes": {
+            "type": "object",
+            "description": "Details of what changed",
+            "properties": {
+              "previous_parent_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Previous parent for move events"
+              },
+              "previous_path": {
+                "type": "string",
+                "description": "Previous path for move events"
+              },
+              "updated_fields": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "List of updated field names"
+              }
+            }
+          },
+          "metadata": {
+            "type": "object",
+            "description": "Additional event metadata",
+            "properties": {
+              "correlation_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Request correlation ID"
+              },
+              "user_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "User who triggered the change"
+              },
+              "operation": {
+                "type": "string",
+                "description": "Operation that caused the event"
+              }
+            }
+          }
+        },
+        "required": ["event_id", "event_type", "event_version", "timestamp", "source", "tenant_id", "taxonomy_id", "category"]
+      },
+      "ClassificationUpdatedPayload": {
+        "type": "object",
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique event identifier"
+          },
+          "event_type": {
+            "type": "string",
+            "enum": ["classification.created", "classification.updated", "classification.confirmed", "classification.rejected", "classification.expired", "classification.deleted"],
+            "description": "Type of classification event"
+          },
+          "event_version": {
+            "type": "string",
+            "const": "v1.0.0",
+            "description": "Event schema version"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Event timestamp in ISO 8601 format"
+          },
+          "source": {
+            "type": "string",
+            "const": "taxonomy:3201",
+            "description": "Event source service"
+          },
+          "tenant_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Tenant identifier"
+          },
+          "classification": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Classification identifier"
+              },
+              "entity_type": {
+                "type": "string",
+                "description": "Type of classified entity"
+              },
+              "entity_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Classified entity identifier"
+              },
+              "category_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Category identifier"
+              },
+              "confidence_score": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "Classification confidence"
+              },
+              "assigned_by": {
+                "type": "string",
+                "enum": ["system", "user", "ai", "import"],
+                "description": "Assignment method"
+              },
+              "status": {
+                "type": "string",
+                "enum": ["pending", "confirmed", "rejected", "expired"],
+                "description": "Classification status"
+              }
+            },
+            "required": ["id", "entity_type", "entity_id", "category_id", "confidence_score", "assigned_by", "status"]
+          },
+          "category": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "taxonomy_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "slug": {
+                "type": "string"
+              },
+              "namespace": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "taxonomy_id", "name", "slug", "namespace"]
+          },
+          "changes": {
+            "type": "object",
+            "description": "Details of what changed",
+            "properties": {
+              "previous_status": {
+                "type": "string",
+                "description": "Previous status for status changes"
+              },
+              "previous_confidence": {
+                "type": "number",
+                "description": "Previous confidence score"
+              },
+              "updated_fields": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "List of updated field names"
+              }
+            }
+          },
+          "metadata": {
+            "type": "object",
+            "description": "Additional event metadata",
+            "properties": {
+              "correlation_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Request correlation ID"
+              },
+              "user_id": {
+                "type": "string",
+                "format": "uuid",
+                "description": "User who triggered the change"
+              },
+              "operation": {
+                "type": "string",
+                "description": "Operation that caused the event"
+              },
+              "ai_model": {
+                "type": "string",
+                "description": "AI model used for classification (if AI-generated)"
+              }
+            }
+          }
+        },
+        "required": ["event_id", "event_type", "event_version", "timestamp", "source", "tenant_id", "classification", "category"]
+      }
+    }
+  }
+}

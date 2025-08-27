@@ -1,0 +1,288 @@
+// Copyright (c) 2025 Eventful India Marketing Services, India
+// All rights reserved.
+// 
+// Service: taxonomy
+// Port: 3201
+// Generated: 2025-08-26T19:30:00Z
+// Template: Eventzr Code Repository Template v1.0
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ================================
+// TAXONOMY CORE MODELS
+// ================================
+
+model Taxonomy {
+  id              String         @id @default(uuid()) @db.Uuid
+  tenant_id       String         @db.Uuid
+  namespace       String         @db.VarChar(100)
+  name            String         @db.VarChar(200)
+  slug            String         @db.VarChar(200)
+  description     String?        @db.Text
+  version         Int            @default(1)
+  status          TaxonomyStatus @default(draft)
+  is_system       Boolean        @default(false)
+  is_hierarchical Boolean        @default(true)
+  max_depth       Int            @default(6)
+  metadata        Json?
+
+  // Audit fields
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at DateTime  @updatedAt @db.Timestamptz(6)
+  deleted_at DateTime? @db.Timestamptz(6)
+  created_by String?   @db.Uuid
+  updated_by String?   @db.Uuid
+
+  // Relations
+  categories      Category[]
+  classifications Classification[]
+
+  // Indexes and constraints
+  @@unique([tenant_id, namespace, slug])
+  @@index([tenant_id])
+  @@index([tenant_id, namespace])
+  @@index([tenant_id, status])
+  @@index([namespace, status])
+  @@index([slug])
+  @@index([created_at])
+  @@index([updated_at])
+  @@map("taxonomies")
+}
+
+model Category {
+  id               String  @id @default(uuid()) @db.Uuid
+  tenant_id        String  @db.Uuid
+  taxonomy_id      String  @db.Uuid
+  parent_id        String? @db.Uuid
+  name             String  @db.VarChar(200)
+  slug             String  @db.VarChar(200)
+  description      String? @db.Text
+  level            Int     @default(0)
+  path             String  @db.Text // Materialized path for hierarchy
+  sort_order       Int     @default(0)
+  is_leaf          Boolean @default(true)
+  is_active        Boolean @default(true)
+  ai_generated     Boolean @default(false)
+  confidence_score Float?  @db.Real
+  usage_count      Int     @default(0)
+  metadata         Json?
+
+  // Audit fields
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at DateTime  @updatedAt @db.Timestamptz(6)
+  deleted_at DateTime? @db.Timestamptz(6)
+  created_by String?   @db.Uuid
+  updated_by String?   @db.Uuid
+
+  // Relations
+  taxonomy        Taxonomy         @relation(fields: [taxonomy_id], references: [id], onDelete: Cascade)
+  parent          Category?        @relation("CategoryHierarchy", fields: [parent_id], references: [id])
+  children        Category[]       @relation("CategoryHierarchy")
+  classifications Classification[]
+  tags            Tag[]
+
+  // Indexes and constraints
+  @@unique([tenant_id, taxonomy_id, slug])
+  @@index([tenant_id])
+  @@index([tenant_id, taxonomy_id])
+  @@index([tenant_id, taxonomy_id, parent_id])
+  @@index([taxonomy_id, level])
+  @@index([parent_id])
+  @@index([path])
+  @@index([is_active])
+  @@index([usage_count])
+  @@index([ai_generated, confidence_score])
+  @@index([created_at])
+  @@index([updated_at])
+  @@map("categories")
+}
+
+model Classification {
+  id               String               @id @default(uuid()) @db.Uuid
+  tenant_id        String               @db.Uuid
+  entity_type      String               @db.VarChar(50)
+  entity_id        String               @db.Uuid
+  taxonomy_id      String               @db.Uuid
+  category_id      String               @db.Uuid
+  confidence_score Float                @default(1.0) @db.Real
+  assigned_by      AssignmentMethod     @default(user)
+  status           ClassificationStatus @default(confirmed)
+  expires_at       DateTime?            @db.Timestamptz(6)
+  metadata         Json?
+
+  // Audit fields
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at DateTime  @updatedAt @db.Timestamptz(6)
+  deleted_at DateTime? @db.Timestamptz(6)
+  created_by String?   @db.Uuid
+  updated_by String?   @db.Uuid
+
+  // Relations
+  taxonomy Taxonomy @relation(fields: [taxonomy_id], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [category_id], references: [id], onDelete: Cascade)
+
+  // Indexes and constraints
+  @@unique([tenant_id, entity_type, entity_id, category_id])
+  @@index([tenant_id])
+  @@index([tenant_id, entity_type])
+  @@index([tenant_id, entity_type, entity_id])
+  @@index([entity_type, entity_id])
+  @@index([category_id])
+  @@index([taxonomy_id])
+  @@index([status])
+  @@index([assigned_by])
+  @@index([confidence_score])
+  @@index([expires_at])
+  @@index([created_at])
+  @@index([updated_at])
+  @@map("classifications")
+}
+
+model Namespace {
+  id          String        @id @default(uuid()) @db.Uuid
+  tenant_id   String        @db.Uuid
+  name        String        @db.VarChar(100)
+  slug        String        @db.VarChar(100)
+  description String?       @db.Text
+  type        NamespaceType @default(custom)
+  is_system   Boolean       @default(false)
+  is_active   Boolean       @default(true)
+  quota_limit Int?
+  quota_used  Int           @default(0)
+  metadata    Json?
+
+  // Audit fields
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at DateTime  @updatedAt @db.Timestamptz(6)
+  deleted_at DateTime? @db.Timestamptz(6)
+  created_by String?   @db.Uuid
+  updated_by String?   @db.Uuid
+
+  // Indexes and constraints
+  @@unique([tenant_id, slug])
+  @@index([tenant_id])
+  @@index([tenant_id, type])
+  @@index([tenant_id, is_active])
+  @@index([type])
+  @@index([is_system])
+  @@index([created_at])
+  @@index([updated_at])
+  @@map("namespaces")
+}
+
+model Tag {
+  id          String  @id @default(uuid()) @db.Uuid
+  tenant_id   String  @db.Uuid
+  category_id String? @db.Uuid
+  name        String  @db.VarChar(100)
+  slug        String  @db.VarChar(100)
+  description String? @db.Text
+  color       String? @db.VarChar(7) // Hex color code
+  is_system   Boolean @default(false)
+  is_active   Boolean @default(true)
+  usage_count Int     @default(0)
+  metadata    Json?
+
+  // Audit fields
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at DateTime  @updatedAt @db.Timestamptz(6)
+  deleted_at DateTime? @db.Timestamptz(6)
+  created_by String?   @db.Uuid
+  updated_by String?   @db.Uuid
+
+  // Relations
+  category    Category?   @relation(fields: [category_id], references: [id], onDelete: SetNull)
+  entity_tags EntityTag[]
+
+  // Indexes and constraints
+  @@unique([tenant_id, slug])
+  @@index([tenant_id])
+  @@index([tenant_id, category_id])
+  @@index([category_id])
+  @@index([name])
+  @@index([is_active])
+  @@index([usage_count])
+  @@index([created_at])
+  @@index([updated_at])
+  @@map("tags")
+}
+
+model EntityTag {
+  id               String           @id @default(uuid()) @db.Uuid
+  tenant_id        String           @db.Uuid
+  entity_type      String           @db.VarChar(50)
+  entity_id        String           @db.Uuid
+  tag_id           String           @db.Uuid
+  confidence_score Float            @default(1.0) @db.Real
+  assigned_by      AssignmentMethod @default(user)
+  metadata         Json?
+
+  // Audit fields
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at DateTime  @updatedAt @db.Timestamptz(6)
+  deleted_at DateTime? @db.Timestamptz(6)
+  created_by String?   @db.Uuid
+  updated_by String?   @db.Uuid
+
+  // Relations
+  tag Tag @relation(fields: [tag_id], references: [id], onDelete: Cascade)
+
+  // Indexes and constraints
+  @@unique([tenant_id, entity_type, entity_id, tag_id])
+  @@index([tenant_id])
+  @@index([tenant_id, entity_type])
+  @@index([tenant_id, entity_type, entity_id])
+  @@index([entity_type, entity_id])
+  @@index([tag_id])
+  @@index([assigned_by])
+  @@index([confidence_score])
+  @@index([created_at])
+  @@index([updated_at])
+  @@map("entity_tags")
+}
+
+// ================================
+// ENUMS
+// ================================
+
+enum TaxonomyStatus {
+  draft
+  active
+  deprecated
+  archived
+
+  @@map("taxonomy_status")
+}
+
+enum ClassificationStatus {
+  pending
+  confirmed
+  rejected
+  expired
+
+  @@map("classification_status")
+}
+
+enum AssignmentMethod {
+  system
+  user
+  ai
+  import
+
+  @@map("assignment_method")
+}
+
+enum NamespaceType {
+  system
+  custom
+  predefined
+
+  @@map("namespace_type")
+}

@@ -1,0 +1,121 @@
+# Copyright (c) 2025 Eventful India Marketing Services, India
+# All rights reserved.
+# 
+# Service: taxonomy
+# Port: 3201
+# Docker Compose for Local Development
+# Template: Eventzr Code Repository Template v1.0
+
+version: '3.8'
+
+services:
+  # Taxonomy Service
+  taxonomy:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: taxonomy-service
+    ports:
+      - "3201:3201"
+    environment:
+      NODE_ENV: development
+      PORT: 3201
+      DATABASE_URL: postgresql://taxonomy:taxonomy123@taxonomy-db:5432/taxonomy_db
+      REDIS_HOST: taxonomy-cache
+      REDIS_PORT: 6379
+      LOG_LEVEL: debug
+      ENABLE_SWAGGER: true
+    depends_on:
+      - taxonomy-db
+      - taxonomy-cache
+    networks:
+      - taxonomy-network
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3201/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # PostgreSQL Database
+  taxonomy-db:
+    image: postgres:15-alpine
+    container_name: taxonomy-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: taxonomy_db
+      POSTGRES_USER: taxonomy
+      POSTGRES_PASSWORD: taxonomy123
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    volumes:
+      - taxonomy-postgres-data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    networks:
+      - taxonomy-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taxonomy -d taxonomy_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  taxonomy-cache:
+    image: redis:7-alpine
+    container_name: taxonomy-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --requirepass ""
+    volumes:
+      - taxonomy-redis-data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - taxonomy-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # Development Tools
+  adminer:
+    image: adminer:latest
+    container_name: taxonomy-adminer
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: taxonomy-db
+    networks:
+      - taxonomy-network
+    profiles:
+      - tools
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: taxonomy-redis-commander
+    ports:
+      - "8081:8081"
+    environment:
+      REDIS_HOSTS: local:taxonomy-cache:6379
+    networks:
+      - taxonomy-network
+    profiles:
+      - tools
+
+volumes:
+  taxonomy-postgres-data:
+    name: taxonomy-postgres-data
+  taxonomy-redis-data:
+    name: taxonomy-redis-data
+
+networks:
+  taxonomy-network:
+    name: taxonomy-network
+    driver: bridge
+
