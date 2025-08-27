@@ -12,11 +12,11 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { TaxonomyDashboard } from '@/components/taxonomy/taxonomy-dashboard';
+import { TaxonomyDashboard } from '../../src/components/taxonomy/taxonomy-dashboard';
 
 // Mock the taxonomy store
 const mockUseTaxonomyStore = vi.fn();
-vi.mock('@/lib/stores/taxonomy-store', () => ({
+vi.mock('../../src/lib/stores/taxonomy-store', () => ({
   useTaxonomyStore: () => mockUseTaxonomyStore(),
 }));
 
@@ -75,7 +75,7 @@ describe('TaxonomyDashboard', () => {
   it('displays loading state initially', () => {
     render(<TaxonomyDashboard />, { wrapper: createWrapper() });
 
-    expect(screen.getAllByText('animate-pulse')).toHaveLength.greaterThan(0);
+    expect(screen.getAllByText('animate-pulse').length).toBeGreaterThan(0);
   });
 
   it('handles quick action buttons', async () => {

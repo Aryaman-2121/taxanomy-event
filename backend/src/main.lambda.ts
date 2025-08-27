@@ -78,13 +78,16 @@ async function createNestServer(expressApp: express.Application) {
     .addTag('health', 'Health check endpoints')
     .build();
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, document, {
-    swaggerOptions: {
-      persistAuthorization: true,
-    },
-  });
-
+const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup("docs", app, document, {
+      swaggerOptions: {
+        persistAuthorization: true,
+        displayRequestDuration: true,
+        docExpansion: "none",
+        filter: true,
+        showRequestHeaders: true,
+      },
+    });
   await app.init();
   return app.getHttpAdapter().getInstance();
 }

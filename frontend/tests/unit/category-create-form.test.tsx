@@ -12,11 +12,11 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { CategoryCreateForm } from '@/components/forms/category-create-form';
+import { CategoryCreateForm } from '../../src/components/forms/category-create-form';
 
 // Mock the stores
 const mockUseTaxonomyStore = vi.fn();
-vi.mock('@/lib/stores/taxonomy-store', () => ({
+vi.mock('../../src/lib/stores/taxonomy-store', () => ({
   useTaxonomyStore: () => mockUseTaxonomyStore(),
 }));
 

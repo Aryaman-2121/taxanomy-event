@@ -19,6 +19,22 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    include: [
+      '__tests__/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+      'tests/unit/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
+    ],
+    exclude: [
+      'node_modules/',
+      'dist/',
+      '.next/',
+      'tests/e2e/**/*', // Exclude e2e tests as they should use Playwright
+      'src/test/',
+      '**/*.d.ts',
+      '**/*.config.ts',
+      '**/*.config.js',
+      'src/stories/',
+      'coverage/',
+    ],
     css: true,
     coverage: {
       provider: 'v8',
@@ -47,5 +63,8 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
+  },
+  define: {
+    global: 'globalThis',
   },
 });
